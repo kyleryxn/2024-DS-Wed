@@ -1,0 +1,45 @@
+name: Auto Pull Request from Upstream
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # This runs daily at 2 AM UTC, adjust to your needs
+  workflow_dispatch:  # Allows you to run this manually if needed
+  watch:
+    types:
+      - started
+
+jobs:
+  update_fork:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout repo
+      uses: actions/checkout@v3
+      with:
+        ref: main  # Change this to the branch you want to sync with
+
+    # Step 2: Add the upstream repository
+    - name: Add upstream repository
+      run: |
+        git remote add upstream https://github.com/CUNYTechPrep/2024-DS-Wed.git
+        git fetch upstream
+        git checkout main
+
+    # Step 3: Sync forked repository with upstream
+    - name: Merge upstream changes
+      run: |
+        git merge upstream/main
+        git push origin main
+
+    # Step 4: Create pull request to merge fork changes
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'Merge changes from upstream'
+        branch: 'auto-merge-upstream'
+        title: 'Update fork with changes from upstream'
+        body: 'This is an automated pull request to merge the latest changes from upstream repository.'
+        base: main
+        labels: 'auto-update'
